@@ -257,35 +257,56 @@
       animation: skillsPulse 700ms steps(3,end) infinite;
     }
 
-    @keyframes skillsPulse{
-      0%   { transform: translateX(0); }
-      33%  { transform: translateX(-3px); }
+    33%  { transform: translateX(-3px); }
       66%  { transform: translateX(-5px); }
       100% { transform: translateX(0); }
     }
 
 
     /* Seta simples (span com background, sem img) */
-    #ficha .skills-arrow{
-      position:absolute;
-      left:28.5%;
-      top:57.5%;
-      width:12px;
-      height:12px;
-      background-image:url('/ui/pixil-frame-0.png');
-      background-size:12px 12px;
-      background-repeat:no-repeat;
-      image-rendering: pixelated;
-      pointer-events:none;
-    }
-
-
     /* HUD simplificado para jogadores */
     #info{ display:none !important; }
 
     /* Controles de layout ficam ocultos; habilitar com ?dev=1 */
     .devOnly{ display:none !important; }
     body.dev .devOnly{ display:inline-block !important; }
+
+/* imagem base da ficha */
+#ficha > img.ficha-base{
+  width:100%;
+  display:block;
+  image-rendering:pixelated;
+  pointer-events:none;
+}
+
+/* ===== SETA SKILLS (pixel art PNG + animação travada) ===== */
+#ficha .skills-arrow{
+  position:absolute;
+  /* alinhado para apontar para o meio do "SKILLS" */
+  left:28.5%;
+  top:57.0%;
+
+  width:12px;
+  height:12px;
+  display:block;
+
+  background-image:url('/ui/pixil-frame-0.png');
+  background-size:12px 12px;
+  background-repeat:no-repeat;
+
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events:none;
+
+  animation: skillsNudge 800ms steps(2,end) infinite;
+}
+
+@keyframes skillsNudge{
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
 </style>
 </head>
 
@@ -384,7 +405,6 @@
 
   <!-- Seta simples ao lado de SKILLS -->
   <span class="skills-arrow"></span>
-
 </div>
 
 <div id="hud">
