@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RPG Fichas</title>
+  <style>
+    body{margin:0; min-height:100vh; display:grid; place-items:center; background:#111; color:#fff; font-family:system-ui,Arial}
+    .card{width:min(92vw,720px); border:1px solid #333; background:#1a1a1a; border-radius:12px; padding:18px}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    a{display:inline-block; padding:10px 12px; border-radius:10px; border:1px solid #444; color:#fff; text-decoration:none}
+    a:hover{border-color:#777}
+    .muted{opacity:.85; margin-top:10px; font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 12px">RPG Fichas</h2>
+    <div class="row">
+      <a href="/nova.html">Nova ficha</a>
+      <a href="/gerenciar.html">Gerenciar fichas</a>
+    </div>
+    <div class="muted">As fichas são salvas em <b>fichas.json</b>.</div>
+  </div>
+</body>
+</html>

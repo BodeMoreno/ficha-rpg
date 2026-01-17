@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mapeador (Labels + Campos)</title>
+
+<style>
+  @font-face{
+    font-family:"PragmataFlash09";
+    src:url("/fonts/PragmataFlash09.ttf") format("truetype");
+  }
+
+  body{
+    margin:0;
+    background:#111;
+    color:#fff;
+    font-family:"PragmataFlash09", monospace;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    min-height:100vh;
+    padding:12px 0;
+    box-sizing:border-box;
+  }
+
+  #wrap{ width:min(95vw,1100px); }
+
+  #ficha{
+    position:relative;
+    width:100%;
+    user-select:none;
+  }
+
+  #imgRef{
+    width:100%;
+    display:block;
+    pointer-events:none;
+  }
+
+  #overlay{
+    position:absolute;
+    inset:0;
+    z-index:2;
+  }
+
+  .item{
+    position:absolute;
+    box-sizing:border-box;
+    border:1px dashed rgba(255,255,255,0.6);
+    background:rgba(255,255,255,0.05);
+  }
+
+  .item.selected{
+    border:1px solid #fff;
+    background:rgba(255,255,255,0.08);
+  }
+
+  .tag{
+    position:absolute;
+    left:0;
+    top:-18px;
+    font-size:12px;
+    background:rgba(0,0,0,0.8);
+    padding:2px 6px;
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:6px;
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+  }
+
+  .kind{
+    opacity:.85;
+    margin-left:6px;
+    font-size:11px;
+  }
+
+  .handle{
+    position:absolute;
+    width:12px;
+    height:12px;
+    right:-6px;
+    bottom:-6px;
+    background:#fff;
+    border-radius:2px;
+    cursor:nwse-resize;
+  }
+
+  #hud{
+    width:100%;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:10px;
+  }
+
+  .left, .right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  button, select{
+    padding:8px 12px;
+    font-family:"PragmataFlash09", monospace;
+    font-size:14px;
+    cursor:pointer;
+  }
+
+  #out{
+    width:100%;
+    height:260px;
+    display:none;
+    background:#0b0b0b;
+    color:#0f0;
+    border:1px solid rgba(255,255,255,0.25);
+    font-family:monospace;
+    padding:8px;
+    box-sizing:border-box;
+  }
+
+  .hint{
+    opacity:.9;
+    font-size:13px;
+    white-space:pre-wrap;
+    width:100%;
+    margin-top:8px;
+  }
+
+  .pill{
+    padding:6px 10px;
+    border:1px solid #444;
+    border-radius:999px;
+    cursor:pointer;
+    user-select:none;
+    background:#1a1a1a;
+  }
+  .pill.on{
+    border-color:#fff;
+  }
+</style>
+</head>
+
+<body>
+  <div id="wrap">
+    <div id="ficha">
+      <img id="imgRef" src="status1.jpg" alt="Referência">
+      <div id="overlay"></div>
+    </div>
+
+    <div id="hud">
+      <div class="left">
+        <span class="pill on" id="modeField">Criar: CAMPO do jogador</span>
+        <span class="pill" id="modeLabel">Criar: LABEL fixo</span>
+
+        <button id="add" type="button">Adicionar</button>
+        <button id="edit" type="button">Editar selecionado</button>
+        <button id="del" type="button">Excluir selecionado</button>
+
+        <button id="exportFields" type="button">Exportar CAMPOS</button>
+        <button id="exportLabels" type="button">Exportar LABELS</button>
+      </div>
+
+      <div class="right">
+        <select id="imgSelect">
+          <option value="status1.jpg">Ver: status1.jpg (referência)</option>
+          <option value="statuslimpo.jpg">Ver: statuslimpo.jpg (limpo)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="hint">
+Regras:
+- CAMPO = jogador edita / salva no JSON (usa data-id limpo: nome, hp, str...).
+- LABEL = texto fixo (não edita / não salva). Você define o texto (ex: "NOME", "RAÇA").
+- Para sobrepor: crie um LABEL e um CAMPO no mesmo lugar.
+Exporta separado: um bloco para colar no ficha.html (labels) e outro (campos).
+    </div>
+
+    <textarea id="out" spellcheck="false"></textarea>
+  </div>
+
+<script>
+  const imgRef = document.getElementById("imgRef");
+  const overlay = document.getElementById("overlay");
+  const out = document.getElementById("out");
+  const imgSelect = document.getElementById("imgSelect");
+
+  const modeFieldBtn = document.getElementById("modeField");
+  const modeLabelBtn = document.getElementById("modeLabel");
+
+  let createMode = "field"; // "field" | "label"
+  let selected = null;
+  let mode = null; // "drag" | "resize"
+  let startX=0, startY=0;
+  let startW=0, startH=0;
+  let offX=0, offY=0;
+
+  function overlayRect(){ return overlay.getBoundingClientRect(); }
+  function pct(n){ return n.toFixed(2) + "%"; }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function p2n(v){ return parseFloat((v||"0%").replace("%","")) || 0; }
+
+  function setCreateMode(m){
+    createMode = m;
+    modeFieldBtn.classList.toggle("on", m === "field");
+    modeLabelBtn.classList.toggle("on", m === "label");
+  }
+  modeFieldBtn.onclick = () => setCreateMode("field");
+  modeLabelBtn.onclick = () => setCreateMode("label");
+
+  function selectItem(el){
+    if (selected) selected.classList.remove("selected");
+    selected = el;
+    if (selected) selected.classList.add("selected");
+  }
+
+  function defaultId(){
+    let i = 1;
+    while (document.querySelector(`.item[data-kind="field"][data-id="campo${i}"]`)) i++;
+    return `campo${i}`;
+  }
+
+  function createItem(){
+    const item = document.createElement("div");
+    item.className = "item";
+    item.style.left = "10%";
+    item.style.top = "10%";
+    item.style.width = "15%";
+    item.style.height = "6%";
+
+    // define tipo
+    if (createMode === "field"){
+      item.dataset.kind = "field";
+      item.dataset.id = defaultId();
+    } else {
+      item.dataset.kind = "label";
+      item.dataset.text = "TEXTO";
+    }
+
+    const tag = document.createElement("div");
+    tag.className = "tag";
+
+    const handle = document.createElement("div");
+    handle.className = "handle";
+
+    item.appendChild(tag);
+    item.appendChild(handle);
+    overlay.appendChild(item);
+
+    function refreshTag(){
+      const kind = item.dataset.kind;
+      if (kind === "field"){
+        tag.innerHTML = `${escapeHtml(item.dataset.id)} <span class="kind">[CAMPO]</span>`;
+      } else {
+        tag.innerHTML = `${escapeHtml(item.dataset.text)} <span class="kind">[LABEL]</span>`;
+      }
+    }
+    refreshTag();
+
+    item.addEventListener("mousedown", (e) => {
+      if (e.target.classList.contains("handle")) return;
+      if (e.target.classList.contains("tag")) return;
+
+      selectItem(item);
+      mode = "drag";
+
+      const br = item.getBoundingClientRect();
+      offX = e.clientX - br.left;
+      offY = e.clientY - br.top;
+
+      e.preventDefault();
+    });
+
+    handle.addEventListener("mousedown", (e) => {
+      selectItem(item);
+      mode = "resize";
+
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = p2n(item.style.width);
+      startH = p2n(item.style.height);
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    tag.addEventListener("click", (e) => {
+      selectItem(item);
+      editSelected();
+      refreshTag();
+      e.stopPropagation();
+    });
+
+    // guarda refresh no elemento
+    item._refreshTag = refreshTag;
+
+    selectItem(item);
+  }
+
+  function editSelected(){
+    if (!selected) return;
+    const kind = selected.dataset.kind;
+
+    if (kind === "field"){
+      const atual = selected.dataset.id || "";
+      const novo = prompt("ID do CAMPO (ex: nome, hp, str):", atual);
+      if (!novo) return;
+
+      if (/[^\w]/.test(novo)) {
+        alert("Use apenas letras/números/_ (sem espaço, sem : , sem acento). Ex: nome, hp, skills");
+        return;
+      }
+
+      if (document.querySelector(`.item[data-kind="field"][data-id="${CSS.escape(novo)}"]`) && novo !== atual) {
+        alert("Já existe um CAMPO com esse ID.");
+        return;
+      }
+
+      selected.dataset.id = novo;
+      selected._refreshTag?.();
+
+    } else {
+      const atual = selected.dataset.text || "";
+      const novo = prompt("Texto do LABEL fixo (ex: NOME, RAÇA, CLASSE):", atual);
+      if (!novo) return;
+      selected.dataset.text = novo;
+      selected._refreshTag?.();
+    }
+  }
+
+  function deleteSelected(){
+    if (!selected) return;
+    const kind = selected.dataset.kind;
+    const name = kind === "field" ? selected.dataset.id : selected.dataset.text;
+    const ok = confirm(`Excluir "${name}"?`);
+    if (!ok) return;
+    selected.remove();
+    selected = null;
+  }
+
+  overlay.addEventListener("mousedown", (e) => {
+    if (e.target === overlay) selectItem(null);
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!selected || !mode) return;
+
+    const r = overlayRect();
+
+    if (mode === "drag") {
+      const x = e.clientX - r.left - offX;
+      const y = e.clientY - r.top - offY;
+
+      let leftPct = (x / r.width) * 100;
+      let topPct  = (y / r.height) * 100;
+
+      leftPct = clamp(leftPct, 0, 100);
+      topPct  = clamp(topPct, 0, 100);
+
+      selected.style.left = pct(leftPct);
+      selected.style.top  = pct(topPct);
+    }
+
+    if (mode === "resize") {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      let wPct = startW + (dx / r.width) * 100;
+      let hPct = startH + (dy / r.height) * 100;
+
+      wPct = clamp(wPct, 1, 100);
+      hPct = clamp(hPct, 1, 100);
+
+      selected.style.width  = pct(wPct);
+      selected.style.height = pct(hPct);
+    }
+  });
+
+  document.addEventListener("mouseup", () => { mode = null; });
+
+  imgSelect.addEventListener("change", () => { imgRef.src = imgSelect.value; });
+
+  document.getElementById("add").addEventListener("click", createItem);
+  document.getElementById("edit").addEventListener("click", editSelected);
+  document.getElementById("del").addEventListener("click", deleteSelected);
+
+  document.getElementById("exportFields").addEventListener("click", () => {
+    const items = [...document.querySelectorAll('.item[data-kind="field"]')];
+
+    out.value = items.map(b => {
+      const id = b.dataset.id;
+      const left = b.style.left;
+      const top = b.style.top;
+      const width = b.style.width;
+      const height = b.style.height;
+
+      return `<div class="box" data-id="${id}" style="left:${left}; top:${top}; width:${width}; height:${height};">
+  <div class="campo" contenteditable="true"></div>
+  <div class="handle"></div>
+</div>`;
+    }).join("\n\n");
+
+    out.style.display = "block";
+    out.select();
+  });
+
+  document.getElementById("exportLabels").addEventListener("click", () => {
+    const items = [...document.querySelectorAll('.item[data-kind="label"]')];
+
+    out.value = items.map(b => {
+      const txt = b.dataset.text || "";
+      const left = b.style.left;
+      const top = b.style.top;
+      const width = b.style.width;
+      const height = b.style.height;
+
+      // label ocupa a caixa inteira (igual ao que você mapeou)
+      return `<div class="labelBox" style="left:${left}; top:${top}; width:${width}; height:${height};">${escapeHtml(txt)}</div>`;
+    }).join("\n\n");
+
+    out.style.display = "block";
+    out.select();
+  });
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+</script>
+
+</body>
+</html>

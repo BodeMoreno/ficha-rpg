@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<script>
+(async () => {
+  const res = await fetch("/ficha", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  const data = await res.json();
+  location.href = "/ficha.html?id=" + encodeURIComponent(data.id);
+})();
+</script>
+</body>
+</html>

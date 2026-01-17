@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <style>
+    @font-face {
+      font-family: "PragmataFlash09";
+      src: url("/fonts/PragmataFlash09.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    body{
+      margin:0;
+      background:#111;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      flex-direction:column;
+      gap:10px;
+      color:white;
+      font-family:"PragmataFlash09", monospace;
+      padding:12px 0;
+      box-sizing:border-box;
+    }
+
+    #ficha{
+      position:relative;
+      width:min(95vw, 1100px);
+      user-select:none;
+    }
+
+    
+
+    /* ===== LABELS FIXOS (não editáveis / não salvam) ===== */
+    .labelBox{
+      position:absolute;
+      z-index:1;
+      box-sizing:border-box;
+      color:#fff;
+      font-family:"PragmataFlash09", monospace;
+
+      /* JS ajusta dinamicamente */
+      font-size:40px;
+
+      line-height:1.25;
+      white-space:nowrap;
+      pointer-events:none;
+      text-shadow:0 1px 0 #000;
+      opacity:0.9;
+
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      padding:0 2px;
+
+      overflow:hidden; /* importante pro auto-fit */
+    }
+    .labelCenter{
+      justify-content:center;
+      text-align:center;
+    }
+
+    /* ===== CAMPOS DO JOGADOR ===== */
+    .box{
+      position:absolute;
+      z-index:2;
+      box-sizing:border-box;
+      border:none;
+      background:transparent;
+    }
+
+    .campo{
+      width:100%;
+      height:100%;
+      background:transparent;
+      border:none;
+      color:white;
+      font-family:"PragmataFlash09", monospace;
+
+      /* JS ajusta dinamicamente */
+      font-size:40px;
+
+      padding:0 2px;
+      margin:0;
+      outline:none;
+      box-sizing:border-box;
+
+      -webkit-font-smoothing:none;
+      font-smooth:never;
+
+      line-height:1.25;
+      white-space:nowrap;
+      overflow:hidden;
+
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+    }
+
+    .center{
+      justify-content:center;
+      text-align:center;
+    }
+
+    /* ===== MODO JOGADOR ===== */
+    body:not(.layout) .campo.vazio:not(:focus){
+      background:transparent;
+      color:transparent; /* vazio => label aparece por baixo */
+    }
+
+    body:not(.layout) .campo:focus{
+      background:#000;
+      color:#fff;
+      outline:1px solid #fff;
+      cursor:text;
+    }
+
+    body:not(.layout) .campo.preenchido:not(:focus){
+      background:#000;
+      color:#fff;
+    }
+
+    /* ===== MODO LAYOUT ===== */
+    .handle{
+      display:none;
+      position:absolute;
+      width:12px;
+      height:12px;
+      right:-6px;
+      bottom:-6px;
+      background:white;
+      cursor:nwse-resize;
+      border-radius:2px;
+    }
+
+    body.layout .box{
+      border:1px dashed rgba(255,255,255,0.35);
+    }
+    body.layout .campo{
+      cursor:move;
+      color:#fff;
+      background:rgba(255,255,255,0.03);
+    }
+    body.layout .handle{
+      display:block;
+    }
+    .box.dragging{
+      border:1px solid white !important;
+      background:rgba(255,255,255,0.06);
+    }
+
+    #hud{
+      width:min(95vw,1100px);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    button{
+      padding:8px 12px;
+      font-family:"PragmataFlash09", monospace;
+      font-size:14px;
+      cursor:pointer;
+    }
+
+    #info{
+      font-size:14px;
+      opacity:0.95;
+      white-space:pre-wrap;
+      flex:1;
+    }
+
+    textarea{
+      width:min(95vw,1100px);
+      height:170px;
+      background:#0b0b0b;
+      color:white;
+      border:1px solid rgba(255,255,255,0.25);
+      font-family:monospace;
+      padding:8px;
+      box-sizing:border-box;
+      display:none;
+    }
+    body.layout textarea{ display:block; }
+  
+    /* Destaque especial para RAÇA */
+    .campo-raca{
+      font-weight:700;
+      padding-top:6px;
+      padding-bottom:6px;
+    }
+
+  
+
+  
+                                    
+
+  
+
+
+    /* Seta SKILLS (pixel art PNG) */
+@keyframes skillsPulse{
+      0%   { transform: translateX(0); }
+      33%  { transform: translateX(-3px); }
+      66%  { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+
+
+    /* Seta simples (span com background, sem img) */
+        /* Seta SKILLS animada (pixel art travada) */
+    #ficha .skills-arrow{
+      position:absolute;
+      left:28.5%;
+      top:57.5%;
+
+      width:12px;
+      height:12px;
+
+      background-image:url('/ui/pixil-frame-0.png');
+      background-size:12px 12px;
+      background-repeat:no-repeat;
+
+      image-rendering: pixelated;
+      pointer-events:none;
+
+      /* animação travada apontando para o SKILLS */
+      animation: skillsNudge 800ms steps(2,end) infinite;
+    }
+
+    @keyframes skillsNudge{
+      0%   { transform: translateX(0); opacity:1; }
+      50%  { transform: translateX(-4px); opacity:1; }
+      100% { transform: translateX(0); opacity:1; }
+    }
+
+
+    /* imagem base da ficha */
+    #ficha > img.ficha-base{
+      width:100%;
+      display:block;
+      image-rendering:pixelated;
+      pointer-events:none;
+    }
+
+</style>
+</head>
+
+<body>
+
+<div id="ficha">
+  <img src="statuslimpo.jpg" alt="Ficha" class="ficha-base">
+
+  <!-- ===== LABELS FIXOS (posições do seu layout de labels) ===== -->
+  <div class="labelBox" style="left:4.36%; top:7.63%; width:18.9%; height:15.1%;">NOME</div>
+  <div class="labelBox labelCenter" style="left:26.53%; top:11.08%; width:9.54%; height:9.81%;">HP</div>
+  <div class="labelBox" style="left:4.45%; top:24.72%; width:17.74%; height:12.36%;">RAÇA</div>
+  <div class="labelBox" style="left:4.37%; top:38.72%; width:20.92%; height:10.91%;">CLASSE</div>
+  <div class="labelBox label-skills" style="left:4.37%; top:53.09%; width:24.64%; height:13.64%;">SKILLS</div>
+
+  <div class="labelBox" style="left:4.54%; top:71.46%; width:16.55%; height:11.64%;">RANK:</div>
+  <div class="labelBox labelCenter" style="left:28.27%; top:23.63%; width:9.81%; height:13.1%;">Lv.</div>
+
+  <div class="labelBox labelCenter" style="left:57%; top:8.91%; width:11.27%; height:12.18%;">STR</div>
+  <div class="labelBox labelCenter" style="left:57.09%; top:24.36%; width:11%; height:12%;">DEX</div>
+  <div class="labelBox labelCenter" style="left:57%; top:39.82%; width:11.09%; height:12.37%;">CON</div>
+
+  <div class="labelBox labelCenter" style="left:76.82%; top:8.91%; width:10.82%; height:12.36%;">INT</div>
+  <div class="labelBox labelCenter" style="left:77%; top:24.36%; width:10.73%; height:12%;">WIS</div>
+  <div class="labelBox labelCenter" style="left:77.09%; top:39.99%; width:10.55%; height:12.36%;">CHA</div>
+
+  <!-- ===== CAMPOS DO JOGADOR (suas coordenadas atualizadas) ===== -->
+  <div class="box" data-id="nome" style="left:4.09%; top:7.82%; width:20.36%; height:12.81%;">
+    <div class="campo" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="raca" style="left:4.72%; top:25.81%; width:17.00%; height:12.36%;">
+    <div class="campo campo-raca" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="classe" style="left:4.73%; top:39.28%; width:19.36%; height:11.00%;">
+    <div class="campo" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="hp" style="left:36.36%; top:10.17%; width:10.82%; height:11.55%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="lv" style="left:37.72%; top:25.41%; width:8%; height:9.5%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="rank" style="left:19.20%; top:72.18%; width:8%; height:9%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="titulo" style="left:42.27%; top:64.9%; width:49.18%; height:10.45%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="str" style="left:69.36%; top:10.36%; width:6%; height:9%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="dex" style="left:69.36%; top:26.36%; width:6%; height:9%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="con" style="left:69.36%; top:41.36%; width:6%; height:9%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="int" style="left:88.18%; top:10.54%; width:6%; height:9%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="wis" style="left:88.27%; top:25.99%; width:6.09%; height:9.55%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <div class="box" data-id="cha" style="left:88.54%; top:40.99%; width:6%; height:9.18%;">
+    <div class="campo center" contenteditable="true"></div>
+    <div class="handle"></div>
+  </div>
+
+  <!-- Seta pixel para SKILLS -->
+  
+
+
+  <!-- Seta simples ao lado de SKILLS -->
+  <span class="skills-arrow"></span>
+
+</div>
+
+<div id="hud">
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button id="btnModo" type="button">Modo Layout: OFF</button>
+    <button id="btnSalvar" type="button">Salvar</button>
+    <button id="btnExport" type="button">Exportar layout</button>
+  </div>
+  <div id="info">Labels (fixos) e campos (jogador) usam auto-resize. Layout ON = arrastar/redimensionar campos do jogador.</div>
+</div>
+
+<textarea id="out" placeholder="Export do layout aparece aqui..."></textarea>
+
+<script>
+  const ficha = document.getElementById("ficha");
+  const btnModo = document.getElementById("btnModo");
+  const btnExport = document.getElementById("btnExport");
+  const btnSalvar = document.getElementById("btnSalvar");
+  const out = document.getElementById("out");
+
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+  if (!id) location.href = "/nova.html";
+
+  let layoutMode = false;
+
+  // ===== AUTO-RESIZE “MAXIMIZA ATÉ CABER” =====
+  const MAX_FONT_GLOBAL = 64;
+  const MIN_FONT_GLOBAL = 8;
+
+  function cabe(el){
+    return el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight;
+  }
+
+  function ajustarFonte(el){
+    if (el.clientWidth <= 0 || el.clientHeight <= 0) return;
+
+    let lo = MIN_FONT_GLOBAL;
+    let hi = MAX_FONT_GLOBAL;
+
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      el.style.fontSize = mid + "px";
+      if (cabe(el)) lo = mid;
+      else hi = mid - 1;
+    }
+
+    el.style.fontSize = lo + "px";
+  }
+
+  function getTexto(el){ return (el.textContent || ""); }
+  function setTexto(el, v){ el.textContent = (v ?? "").toString(); }
+
+  function atualizarEstado(el){
+    const vazio = getTexto(el).trim() === "";
+    el.classList.toggle("vazio", vazio);
+    el.classList.toggle("preenchido", !vazio);
+  }
+
+  function getCampos(){
+    return [...document.querySelectorAll(".box")].map(box => {
+      const key = box.dataset.id;
+      const el = box.querySelector(".campo");
+      return { key, el, box };
+    });
+  }
+
+  function atualizarTodos(){
+    // labels fixos
+    document.querySelectorAll(".labelBox").forEach(l => ajustarFonte(l));
+
+    // campos do jogador
+    getCampos().forEach(({ el }) => {
+      atualizarEstado(el);
+      ajustarFonte(el);
+    });
+  }
+
+  function instalarProtecoes(el){
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") e.preventDefault();
+    });
+
+    el.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+      document.execCommand("insertText", false, text);
+    });
+  }
+
+  // listeners edição
+  getCampos().forEach(({ el }) => {
+    instalarProtecoes(el);
+
+    el.addEventListener("input", () => {
+      if (layoutMode) return;
+      atualizarEstado(el);
+      ajustarFonte(el);
+    });
+
+    el.addEventListener("focus", () => {
+      if (layoutMode) return;
+      ajustarFonte(el);
+    });
+
+    el.addEventListener("blur", () => {
+      if (layoutMode) return;
+      atualizarEstado(el);
+      ajustarFonte(el);
+    });
+  });
+
+  window.addEventListener("resize", () => {
+    if (!layoutMode) atualizarTodos();
+  });
+
+  // ===== DRAG + RESIZE (layout) =====
+  let modo = null;
+  let alvo = null;
+  let startX=0, startY=0;
+  let startW=0, startH=0;
+  let offsetX=0, offsetY=0;
+
+  function pct(n){ return n.toFixed(2) + "%"; }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function getFichaRect(){ return ficha.getBoundingClientRect(); }
+  function p2n(v){ return parseFloat((v||"0%").replace("%","")) || 0; }
+
+  document.querySelectorAll(".box").forEach(box => {
+    const campo = box.querySelector(".campo");
+    const handle = box.querySelector(".handle");
+
+    campo.addEventListener("mousedown", (e) => {
+      if (!layoutMode) return;
+      modo = "drag";
+      alvo = box;
+      box.classList.add("dragging");
+
+      const br = box.getBoundingClientRect();
+      offsetX = e.clientX - br.left;
+      offsetY = e.clientY - br.top;
+
+      e.preventDefault();
+    });
+
+    handle.addEventListener("mousedown", (e) => {
+      if (!layoutMode) return;
+      modo = "resize";
+      alvo = box;
+      box.classList.add("dragging");
+
+      startX = e.clientX;
+      startY = e.clientY;
+
+      startW = p2n(box.style.width);
+      startH = p2n(box.style.height);
+
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!layoutMode || !alvo) return;
+
+    const fr = getFichaRect();
+
+    if (modo === "drag") {
+      const x = e.clientX - fr.left - offsetX;
+      const y = e.clientY - fr.top - offsetY;
+
+      let leftPct = (x / fr.width) * 100;
+      let topPct  = (y / fr.height) * 100;
+
+      leftPct = clamp(leftPct, -5, 95);
+      topPct  = clamp(topPct, -5, 95);
+
+      alvo.style.left = pct(leftPct);
+      alvo.style.top  = pct(topPct);
+    }
+
+    if (modo === "resize") {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      let wPct = startW + (dx / fr.width) * 100;
+      let hPct = startH + (dy / fr.height) * 100;
+
+      wPct = clamp(wPct, 2, 95);
+      hPct = clamp(hPct, 2, 60);
+
+      alvo.style.width  = pct(wPct);
+      alvo.style.height = pct(hPct);
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!alvo) return;
+    alvo.classList.remove("dragging");
+    alvo = null;
+    modo = null;
+    if (layoutMode) atualizarTodos();
+  });
+
+  btnModo.addEventListener("click", () => {
+    layoutMode = !layoutMode;
+    document.body.classList.toggle("layout", layoutMode);
+    btnModo.textContent = "Modo Layout: " + (layoutMode ? "ON" : "OFF");
+    if (!layoutMode) atualizarTodos();
+  });
+
+  btnExport.addEventListener("click", () => {
+    const boxes = [...document.querySelectorAll(".box")];
+    out.value = boxes.map(b => {
+      const key = b.dataset.id;
+      const center = b.querySelector(".campo").classList.contains("center") ? " center" : "";
+      return `<div class="box" data-id="${key}" style="left:${b.style.left}; top:${b.style.top}; width:${b.style.width}; height:${b.style.height};">
+  <div class="campo${center}" contenteditable="true"></div>
+  <div class="handle"></div>
+</div>`;
+    }).join("\n\n");
+    out.select();
+  });
+
+  async function carregar(){
+    const res = await fetch("/ficha/" + encodeURIComponent(id));
+    const f = await res.json();
+
+    getCampos().forEach(({ key, el }) => {
+      if (Object.prototype.hasOwnProperty.call(f, key)) setTexto(el, f[key]);
+      else setTexto(el, "");
+    });
+
+    atualizarTodos();
+  }
+
+  async function salvar(){
+    const obj = {};
+    getCampos().forEach(({ key, el }) => obj[key] = getTexto(el));
+
+    const res = await fetch("/ficha/" + encodeURIComponent(id), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(obj)
+    });
+
+    if (!res.ok) {
+      alert("Falha ao salvar (HTTP " + res.status + ")");
+      return;
+    }
+
+    atualizarTodos();
+  }
+
+  btnSalvar.addEventListener("click", salvar);
+
+  window.addEventListener("load", () => {
+    atualizarTodos();
+    carregar();
+  });
+</script>
+
+</body>
+</html>
