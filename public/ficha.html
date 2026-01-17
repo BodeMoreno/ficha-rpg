@@ -33,9 +33,11 @@
       user-select:none;
     }
 
-    #ficha img{
+    /* imagem base da ficha */
+    #ficha > img.ficha-base{
       width:100%;
       display:block;
+      image-rendering:pixelated;
       pointer-events:none;
     }
 
@@ -173,12 +175,8 @@
       cursor:pointer;
     }
 
-    #info{
-      font-size:14px;
-      opacity:0.95;
-      white-space:pre-wrap;
-      flex:1;
-    }
+    /* HUD simplificado para jogadores */
+    #info{ display:none !important; }
 
     textarea{
       width:min(95vw,1100px);
@@ -192,7 +190,7 @@
       display:none;
     }
     body.layout textarea{ display:block; }
-  
+
     /* Destaque especial para RAÇA */
     .campo-raca{
       font-weight:700;
@@ -200,122 +198,45 @@
       padding-bottom:6px;
     }
 
-  
-
-  
-                                    50%  { transform: translateX(-4px); }
-      100% { transform: translateX(0); }
-    }
-50%  { transform: translateX(-6px); }
-      100% { transform: translateX(0); }
-    }
-50%  { transform: translateX(-6px); }
-      100% { transform: translateX(0); }
-    }
-33%  { transform: translateX(-4px); }
-      66%  { transform: translateX(-8px); }
-      100% { transform: translateX(0); }
-    }
-50%  { transform: translateX(-6px); }
-      100% { transform: translateX(0); }
-    }
-33%  { transform: translateX(-4px); }
-      66%  { transform: translateX(-8px); }
-      100% { transform: translateX(0); }
-    }
-33%  { transform: translateX(-4px); opacity: 1; }
-      66%  { transform: translateX(-8px); opacity: 1; }
-      100% { transform: translateX(0);    opacity: 1; }
-    }
-33%  { transform:translateX(-4px); }
-      66%  { transform:translateX(-8px); }
-      100% { transform:translateX(0); }
-    }
-50%  { transform:translateX(-6px); opacity:1; }
-      100% { transform:translateX(0); opacity:0.3; }
-    }
-
-  
-        50%  { transform: translateX(-4px); }
-      100% { transform: translateX(0); }
-    }
-50%  { transform: translateX(-4px); }
-      100% { transform: translateX(0); }
-    }
-
-
-    /* Seta SKILLS (pixel art PNG) */
-    #ficha img ganhar */
-      width:12px !important;
-      height:12px !important;
-      max-width:none !important;
-      max-height:none !important;
-
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-
-      animation: skillsPulse 700ms steps(3,end) infinite;
-    }
-
-    33%  { transform: translateX(-3px); }
-      66%  { transform: translateX(-5px); }
-      100% { transform: translateX(0); }
-    }
-
-
-    /* Seta simples (span com background, sem img) */
-    /* HUD simplificado para jogadores */
-    #info{ display:none !important; }
-
     /* Controles de layout ficam ocultos; habilitar com ?dev=1 */
     .devOnly{ display:none !important; }
     body.dev .devOnly{ display:inline-block !important; }
 
-/* imagem base da ficha */
-#ficha > img.ficha-base{
-  width:100%;
-  display:block;
-  image-rendering:pixelated;
-  pointer-events:none;
-}
+    /* ===== SETA SKILLS (pixel art PNG + animação travada) ===== */
+    #ficha .skills-arrow{
+      position:absolute;
+      left:28.5%;
+      top:57.0%;
 
-/* ===== SETA SKILLS (pixel art PNG + animação travada) ===== */
-#ficha .skills-arrow{
-  position:absolute;
-  /* alinhado para apontar para o meio do "SKILLS" */
-  left:28.5%;
-  top:57.0%;
+      width:12px;
+      height:12px;
+      display:block;
 
-  width:12px;
-  height:12px;
-  display:block;
+      background-image:url('/ui/pixil-frame-0.png');
+      background-size:12px 12px;
+      background-repeat:no-repeat;
 
-  background-image:url('/ui/pixil-frame-0.png');
-  background-size:12px 12px;
-  background-repeat:no-repeat;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      pointer-events:none;
 
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  pointer-events:none;
+      animation: skillsNudge 800ms steps(2,end) infinite;
+    }
 
-  animation: skillsNudge 800ms steps(2,end) infinite;
-}
-
-@keyframes skillsNudge{
-  0%   { transform: translateX(0); }
-  50%  { transform: translateX(-4px); }
-  100% { transform: translateX(0); }
-}
-
-</style>
+    @keyframes skillsNudge{
+      0%   { transform: translateX(0); }
+      50%  { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
+  </style>
 </head>
 
 <body>
 
 <div id="ficha">
-  <img src="statuslimpo.jpg" alt="Ficha">
+  <img src="statuslimpo.jpg" alt="Ficha" class="ficha-base">
 
-  <!-- ===== LABELS FIXOS (posições do seu layout de labels) ===== -->
+  <!-- ===== LABELS FIXOS ===== -->
   <div class="labelBox" style="left:4.36%; top:7.63%; width:18.9%; height:15.1%;">NOME</div>
   <div class="labelBox labelCenter" style="left:26.53%; top:11.08%; width:9.54%; height:9.81%;">HP</div>
   <div class="labelBox" style="left:4.45%; top:24.72%; width:17.74%; height:12.36%;">RAÇA</div>
@@ -333,13 +254,13 @@
   <div class="labelBox labelCenter" style="left:77%; top:24.36%; width:10.73%; height:12%;">WIS</div>
   <div class="labelBox labelCenter" style="left:77.09%; top:39.99%; width:10.55%; height:12.36%;">CHA</div>
 
-  <!-- ===== CAMPOS DO JOGADOR (suas coordenadas atualizadas) ===== -->
+  <!-- ===== CAMPOS DO JOGADOR ===== -->
   <div class="box" data-id="nome" style="left:4.09%; top:7.82%; width:20.36%; height:12.81%;">
     <div class="campo" contenteditable="true"></div>
     <div class="handle"></div>
   </div>
 
-  <div class="box" data-id="raca" style="left:4.72%; top:25.81%; width:17.00%; height:12.36%;">
+  <div class="box" data-id="raca" style="left:4.72%; top:calc(24.54% - 4px); width:17%; height:12.36%;">
     <div class="campo campo-raca" contenteditable="true"></div>
     <div class="handle"></div>
   </div>
@@ -399,11 +320,7 @@
     <div class="handle"></div>
   </div>
 
-  <!-- Seta pixel para SKILLS -->
-  
-
-
-  <!-- Seta simples ao lado de SKILLS -->
+  <!-- Seta ao lado de SKILLS -->
   <span class="skills-arrow"></span>
 </div>
 
@@ -418,7 +335,7 @@
     <button id="btnExport" type="button" class="devOnly">Exportar layout</button>
 
     <input id="fileImport" type="file" accept="application/json" style="display:none;" />
-</div>
+  </div>
   <div id="info"></div>
 </div>
 
@@ -428,23 +345,19 @@
   const ficha = document.getElementById("ficha");
   const btnModo = document.getElementById("btnModo");
   const btnExport = document.getElementById("btnExport");
-
   const out = document.getElementById("out");
 
-  
   const btnVoltar = document.getElementById("btnVoltar");
   const btnBaixar = document.getElementById("btnBaixar");
   const btnImportar = document.getElementById("btnImportar");
   const fileImport = document.getElementById("fileImport");
 
-
-  btnVoltar.addEventListener("click", () => { saveDraftLocal(); location.href = "/"; });
-const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.search);
   const id = params.get("id");
-  
   const dev = params.get("dev");
+
   if (dev === "1") document.body.classList.add("dev");
-if (!id) location.href = "/";
+  if (!id) location.href = "/";
 
   let layoutMode = false;
 
@@ -523,18 +436,16 @@ if (!id) location.href = "/";
   let autosaveTimer = null;
   function scheduleAutosave(){
     clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(() => {
-      saveDraftLocal();
-    }, 250);
+    autosaveTimer = setTimeout(() => saveDraftLocal(), 250);
   }
 
-
+  btnVoltar.addEventListener("click", () => {
+    saveDraftLocal();
+    location.href = "/";
+  });
 
   function atualizarTodos(){
-    // labels fixos
     document.querySelectorAll(".labelBox").forEach(l => ajustarFonte(l));
-
-    // campos do jogador
     getCampos().forEach(({ el }) => {
       atualizarEstado(el);
       ajustarFonte(el);
@@ -561,9 +472,8 @@ if (!id) location.href = "/";
       if (layoutMode) return;
       atualizarEstado(el);
       ajustarFonte(el);
-    
       scheduleAutosave();
-});
+    });
 
     el.addEventListener("focus", () => {
       if (layoutMode) return;
@@ -574,9 +484,8 @@ if (!id) location.href = "/";
       if (layoutMode) return;
       atualizarEstado(el);
       ajustarFonte(el);
-    
       scheduleAutosave();
-});
+    });
   });
 
   window.addEventListener("resize", () => {
@@ -704,25 +613,6 @@ if (!id) location.href = "/";
     const draft = loadDraftLocal();
     if (draft) applyCampos(draft);
 
-
-    atualizarTodos();
-  }
-
-  async function salvar(){
-    const obj = {};
-    getCampos().forEach(({ key, el }) => obj[key] = getTexto(el));
-
-    const res = await fetch("/ficha/" + encodeURIComponent(id), {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(obj)
-    });
-
-    if (!res.ok) {
-      alert("Falha ao salvar (HTTP " + res.status + ")");
-      return;
-    }
-
     atualizarTodos();
   }
 
@@ -742,7 +632,6 @@ if (!id) location.href = "/";
   }
 
   btnBaixar.addEventListener("click", baixarJSON);
-
   btnImportar.addEventListener("click", () => fileImport.click());
 
   fileImport.addEventListener("change", async () => {
@@ -773,7 +662,6 @@ if (!id) location.href = "/";
       fileImport.value = "";
     }
   });
-
 
   window.addEventListener("load", () => {
     atualizarTodos();
