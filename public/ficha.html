@@ -33,7 +33,11 @@
       user-select:none;
     }
 
-    
+    #ficha img{
+      width:100%;
+      display:block;
+      pointer-events:none;
+    }
 
     /* ===== LABELS FIXOS (não editáveis / não salvam) ===== */
     .labelBox{
@@ -199,13 +203,61 @@
   
 
   
-                                    
+                                    50%  { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
+50%  { transform: translateX(-6px); }
+      100% { transform: translateX(0); }
+    }
+50%  { transform: translateX(-6px); }
+      100% { transform: translateX(0); }
+    }
+33%  { transform: translateX(-4px); }
+      66%  { transform: translateX(-8px); }
+      100% { transform: translateX(0); }
+    }
+50%  { transform: translateX(-6px); }
+      100% { transform: translateX(0); }
+    }
+33%  { transform: translateX(-4px); }
+      66%  { transform: translateX(-8px); }
+      100% { transform: translateX(0); }
+    }
+33%  { transform: translateX(-4px); opacity: 1; }
+      66%  { transform: translateX(-8px); opacity: 1; }
+      100% { transform: translateX(0);    opacity: 1; }
+    }
+33%  { transform:translateX(-4px); }
+      66%  { transform:translateX(-8px); }
+      100% { transform:translateX(0); }
+    }
+50%  { transform:translateX(-6px); opacity:1; }
+      100% { transform:translateX(0); opacity:0.3; }
+    }
 
   
+        50%  { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
+50%  { transform: translateX(-4px); }
+      100% { transform: translateX(0); }
+    }
 
 
     /* Seta SKILLS (pixel art PNG) */
-@keyframes skillsPulse{
+    #ficha img ganhar */
+      width:12px !important;
+      height:12px !important;
+      max-width:none !important;
+      max-height:none !important;
+
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+
+      animation: skillsPulse 700ms steps(3,end) infinite;
+    }
+
+    @keyframes skillsPulse{
       0%   { transform: translateX(0); }
       33%  { transform: translateX(-3px); }
       66%  { transform: translateX(-5px); }
@@ -214,48 +266,33 @@
 
 
     /* Seta simples (span com background, sem img) */
-        /* Seta SKILLS animada (pixel art travada) */
     #ficha .skills-arrow{
       position:absolute;
       left:28.5%;
       top:57.5%;
-
       width:12px;
       height:12px;
-
       background-image:url('/ui/pixil-frame-0.png');
       background-size:12px 12px;
       background-repeat:no-repeat;
-
       image-rendering: pixelated;
       pointer-events:none;
-
-      /* animação travada apontando para o SKILLS */
-      animation: skillsNudge 800ms steps(2,end) infinite;
-    }
-
-    @keyframes skillsNudge{
-      0%   { transform: translateX(0); opacity:1; }
-      50%  { transform: translateX(-4px); opacity:1; }
-      100% { transform: translateX(0); opacity:1; }
     }
 
 
-    /* imagem base da ficha */
-    #ficha > img.ficha-base{
-      width:100%;
-      display:block;
-      image-rendering:pixelated;
-      pointer-events:none;
-    }
+    /* HUD simplificado para jogadores */
+    #info{ display:none !important; }
 
+    /* Controles de layout ficam ocultos; habilitar com ?dev=1 */
+    .devOnly{ display:none !important; }
+    body.dev .devOnly{ display:inline-block !important; }
 </style>
 </head>
 
 <body>
 
 <div id="ficha">
-  <img src="statuslimpo.jpg" alt="Ficha" class="ficha-base">
+  <img src="statuslimpo.jpg" alt="Ficha">
 
   <!-- ===== LABELS FIXOS (posições do seu layout de labels) ===== -->
   <div class="labelBox" style="left:4.36%; top:7.63%; width:18.9%; height:15.1%;">NOME</div>
@@ -352,11 +389,17 @@
 
 <div id="hud">
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <button id="btnModo" type="button">Modo Layout: OFF</button>
-    <button id="btnSalvar" type="button">Salvar</button>
-    <button id="btnExport" type="button">Exportar layout</button>
-  </div>
-  <div id="info">Labels (fixos) e campos (jogador) usam auto-resize. Layout ON = arrastar/redimensionar campos do jogador.</div>
+    <button id="btnVoltar" type="button">Voltar</button>
+    <button id="btnBaixar" type="button">Baixar JSON</button>
+    <button id="btnImportar" type="button">Importar JSON</button>
+
+    <!-- DEV (oculto por padrão; aparece só com ?dev=1) -->
+    <button id="btnModo" type="button" class="devOnly">Modo Layout: OFF</button>
+    <button id="btnExport" type="button" class="devOnly">Exportar layout</button>
+
+    <input id="fileImport" type="file" accept="application/json" style="display:none;" />
+</div>
+  <div id="info"></div>
 </div>
 
 <textarea id="out" placeholder="Export do layout aparece aqui..."></textarea>
@@ -365,12 +408,23 @@
   const ficha = document.getElementById("ficha");
   const btnModo = document.getElementById("btnModo");
   const btnExport = document.getElementById("btnExport");
-  const btnSalvar = document.getElementById("btnSalvar");
+
   const out = document.getElementById("out");
 
-  const params = new URLSearchParams(location.search);
+  
+  const btnVoltar = document.getElementById("btnVoltar");
+  const btnBaixar = document.getElementById("btnBaixar");
+  const btnImportar = document.getElementById("btnImportar");
+  const fileImport = document.getElementById("fileImport");
+
+
+  btnVoltar.addEventListener("click", () => { saveDraftLocal(); location.href = "/"; });
+const params = new URLSearchParams(location.search);
   const id = params.get("id");
-  if (!id) location.href = "/nova.html";
+  
+  const dev = params.get("dev");
+  if (dev === "1") document.body.classList.add("dev");
+if (!id) location.href = "/";
 
   let layoutMode = false;
 
@@ -415,6 +469,47 @@
     });
   }
 
+  // ===== SALVAMENTO LOCAL TEMPORARIO (para navegar entre fichas) =====
+  const DRAFT_KEY = "rpg_ficha_draft_" + id;
+
+  function snapshotCampos(){
+    const obj = {};
+    getCampos().forEach(({ key, el }) => obj[key] = getTexto(el));
+    return obj;
+  }
+
+  function applyCampos(obj){
+    getCampos().forEach(({ key, el }) => {
+      if (obj && Object.prototype.hasOwnProperty.call(obj, key)) setTexto(el, obj[key]);
+    });
+  }
+
+  function saveDraftLocal(){
+    try{
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshotCampos()));
+    }catch(_){}
+  }
+
+  function loadDraftLocal(){
+    try{
+      const txt = localStorage.getItem(DRAFT_KEY);
+      if (!txt) return null;
+      return JSON.parse(txt);
+    }catch(_){
+      return null;
+    }
+  }
+
+  let autosaveTimer = null;
+  function scheduleAutosave(){
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      saveDraftLocal();
+    }, 250);
+  }
+
+
+
   function atualizarTodos(){
     // labels fixos
     document.querySelectorAll(".labelBox").forEach(l => ajustarFonte(l));
@@ -446,7 +541,9 @@
       if (layoutMode) return;
       atualizarEstado(el);
       ajustarFonte(el);
-    });
+    
+      scheduleAutosave();
+});
 
     el.addEventListener("focus", () => {
       if (layoutMode) return;
@@ -457,7 +554,9 @@
       if (layoutMode) return;
       atualizarEstado(el);
       ajustarFonte(el);
-    });
+    
+      scheduleAutosave();
+});
   });
 
   window.addEventListener("resize", () => {
@@ -581,6 +680,11 @@
       else setTexto(el, "");
     });
 
+    // aplica rascunho local por cima (para não perder ao voltar)
+    const draft = loadDraftLocal();
+    if (draft) applyCampos(draft);
+
+
     atualizarTodos();
   }
 
@@ -602,7 +706,54 @@
     atualizarTodos();
   }
 
-  btnSalvar.addEventListener("click", salvar);
+  function baixarJSON(){
+    const data = snapshotCampos();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ficha_${id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  }
+
+  btnBaixar.addEventListener("click", baixarJSON);
+
+  btnImportar.addEventListener("click", () => fileImport.click());
+
+  fileImport.addEventListener("change", async () => {
+    const file = fileImport.files && fileImport.files[0];
+    if (!file) return;
+
+    try{
+      const text = await file.text();
+      const obj = JSON.parse(text);
+
+      getCampos().forEach(({ key, el }) => setTexto(el, obj?.[key] ?? ""));
+      atualizarTodos();
+      saveDraftLocal();
+
+      // tenta salvar no servidor (se existir)
+      try{
+        await fetch("/ficha/" + encodeURIComponent(id), {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(snapshotCampos())
+        });
+      }catch(_){}
+
+      alert("Importado com sucesso.");
+    }catch(e){
+      alert("JSON inválido.");
+    } finally {
+      fileImport.value = "";
+    }
+  });
+
 
   window.addEventListener("load", () => {
     atualizarTodos();
