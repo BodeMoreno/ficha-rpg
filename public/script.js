@@ -1,3 +1,4 @@
+// (Observacao) Este arquivo nao e carregado por ficha.html no momento.
 const id = new URLSearchParams(location.search).get("id");
 
 function getTexto(el){
@@ -63,3 +64,10 @@ async function salvar(){
 }
 
 carregar();
+
+
+// Bloquear drag nativo da HUD de skills
+window.addEventListener("DOMContentLoaded", () => {
+  const img = document.getElementById("skillsHudImg");
+  if (img) img.addEventListener("dragstart", (e) => e.preventDefault());
+});
